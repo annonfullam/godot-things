@@ -1,0 +1,39 @@
+[gd_scene format=3 uid="uid://dwooe7mp4l2vx"]
+
+[ext_resource type="Script" uid="uid://ojys5t2s5bkf" path="res://scripts/classes/Inventory/InventoryManager.gd" id="1_mrfv1"]
+[ext_resource type="PackedScene" uid="uid://c2fpf8psytpxo" path="res://inventory_item.tscn" id="2_ec1uc"]
+
+[sub_resource type="Gradient" id="Gradient_mrfv1"]
+offsets = PackedFloat32Array(1)
+colors = PackedColorArray(1, 1, 1, 1)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_ec1uc"]
+gradient = SubResource("Gradient_mrfv1")
+
+[node name="InventoryManager" type="Control" unique_id=2147296066]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 30.0
+offset_top = 6.0
+offset_right = 30.0
+offset_bottom = 6.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_mrfv1")
+grid_size = Vector2i(5, 5)
+cell_size = Vector2i(100, 100)
+cell_texture = SubResource("GradientTexture2D_ec1uc")
+h_separation = 5
+v_separation = 5
+
+[node name="GridContainer" type="GridContainer" parent="." unique_id=228408753]
+layout_mode = 0
+
+[node name="InventoryItem" parent="." unique_id=1343106311 instance=ExtResource("2_ec1uc")]
+layout_mode = 0
+offset_left = 698.0
+offset_top = 296.0
+offset_right = 826.0
+offset_bottom = 424.0

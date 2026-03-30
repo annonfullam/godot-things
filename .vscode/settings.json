@@ -1,0 +1,15 @@
+{
+  "godotTools.editorPath.godot4": "c:\\Users\\annon\\Desktop\\Godot_v4.6.1-stable_mono_win64\\Godot_v4.6.1-stable_mono_win64.exe",
+  "files.exclude": {
+    ".editorconfig": true,
+    "**/.git": true,
+    ".gitattributes": true,
+    "**/.svn": true,
+    "**/.hg": true,
+    "**/.DS_Store": true,
+    "**/Thumbs.db": true,
+    ".godot/": true,
+    "**/*.gd.uid": true,
+    "**/*.import": true
+  }
+}
