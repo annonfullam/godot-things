@@ -14,15 +14,16 @@ var data: Grid
 var cur_dragged_item: InventoryItem = null
 
 var _grid_container: GridContainer
+var _contents: Dictionary[String, int] = { }
 
 
 func _ready() -> void:
+	data = Grid.new(grid_size.x, grid_size.y, null)
+
 	_grid_container = self.find_child("GridContainer")
 	_grid_container.columns = grid_size.x
 	_grid_container.add_theme_constant_override("h_separation", h_separation)
 	_grid_container.add_theme_constant_override("v_separation", v_separation)
-
-	data = Grid.new(grid_size.x, grid_size.y, null)
 
 	for y in range(grid_size.y):
 		for x in range(grid_size.x):
@@ -40,29 +41,40 @@ func _process(_delta: float) -> void:
 		if child is InventorySlot:
 			child.clear_highlight()
 
+	for y in range(grid_size.y):
+		for x in range(grid_size.x):
+			if not data.is_empty_vec(Vector2i(x, y)):
+				_grid_container.get_child(y * grid_size.x + x).set_highlight(Color.BLACK)
+
 	if cur_dragged_item:
-		_update_ui_preview()
+		var can_fit: bool = can_item_fit(cur_dragged_item)
+		var highlight_color: Color = Color.GREEN if can_fit else Color.RED
+		var grid_pos: Vector2i = _screen_pos_to_grid_pos(cur_dragged_item.position)
+		for cell in cur_dragged_item.footprint:
+			var target: Vector2i = grid_pos + cell
+			if data.is_valid_vec(target):
+				var slot_index: int = target.y * grid_size.x + target.x
+				var slot: InventorySlot = _grid_container.get_child(slot_index) as InventorySlot
+				slot.set_highlight(highlight_color)
 
 
-func _update_ui_preview() -> void:
-	var grid_pos: Vector2i = get_grid_coords_at_pos(cur_dragged_item.global_position)
+func _screen_pos_to_grid_pos(screen_pos: Vector2) -> Vector2i:
+	var local_pos: Vector2 = screen_pos - global_position
+	var step_x: float = cell_size.x + h_separation
+	var step_y: float = cell_size.y + v_separation
+	return Vector2i(round(local_pos.x / step_x), round(local_pos.y / step_y))
 
-	var can_fit: bool = can_item_fit(cur_dragged_item)
-	var highlight_color: Color = Color.GREEN if can_fit else Color.RED
-	highlight_color.a = 0.5
 
-	for cell in cur_dragged_item.footprint:
-		var target: Vector2i = grid_pos + cell
-		if data.is_valid_vec(target):
-			var slot_index: int = target.y * grid_size.x + target.x
-			var slot: InventorySlot = _grid_container.get_child(slot_index) as InventorySlot
-			slot.set_highlight(highlight_color)
+func _grid_pos_to_screen_pos(grid_pos: Vector2i) -> Vector2:
+	var step_x: float = cell_size.x + h_separation
+	var step_y: float = cell_size.y + v_separation
+	return Vector2(grid_pos.x * step_x, grid_pos.y * step_y) + global_position
 
 # Public
 
 
 func can_item_fit(item: InventoryItem) -> bool:
-	var grid_pos: Vector2i = get_grid_coords_at_pos(item.global_position)
+	var grid_pos: Vector2i = _screen_pos_to_grid_pos(item.position)
 
 	for cell in item.footprint:
 		var target: Vector2i = grid_pos + cell
@@ -72,46 +84,42 @@ func can_item_fit(item: InventoryItem) -> bool:
 
 
 func place_item(item: InventoryItem) -> void:
-	var grid_pos: Vector2i = get_grid_coords_at_pos(item.global_position)
-
 	if not can_item_fit(item):
-		item.cancel_drag()
+		if item.been_placed: # to prevent infinite recursion
+			item.cancel_drag()
 		return
 
-	item.grid_anchor = grid_pos
+	var grid_pos: Vector2i = _screen_pos_to_grid_pos(item.position)
 	for cell in item.footprint:
-		data.set_at_vec(grid_pos + cell, item.item_data.id)
+		data.set_at_vec(grid_pos + cell, item.item_data.name)
 
-	item.global_position = get_pixel_pos_at_coords(grid_pos)
+	item.position = _grid_pos_to_screen_pos(grid_pos)
+	item.been_placed = true
+
+	if _contents.has(item.item_data.name):
+		_contents[item.item_data.name] += 1
+	else:
+		_contents[item.item_data.name] = 1
 
 
-## This function does not check whether or not the cells belong to the actual item
-## so you must make sure you are passing in the right footprint!
 func remove_item(item: InventoryItem) -> void:
-	if item.grid_anchor == Vector2i(-1, -1):
-		return
+	var grid_pos: Vector2i = _screen_pos_to_grid_pos(item.position)
 
 	for cell in item.footprint:
-		var target: Vector2i = item.grid_anchor + cell
+		var target: Vector2i = grid_pos + cell
 		if not data.is_valid_vec(target):
 			push_error("Index out of bounds")
 			return
 
 	for cell in item.footprint:
-		var target: Vector2i = item.grid_anchor + cell
+		var target: Vector2i = grid_pos + cell
 		data.set_at_vec(target, null)
 
-	item.grid_anchor = Vector2i(-1, -1)
+	if _contents.has(item.item_data.name):
+		_contents[item.item_data.name] -= 1
+	else:
+		push_error("You just removed an item that wasn't in the inventory!")
 
 
-func get_grid_coords_at_pos(pixel_pos: Vector2) -> Vector2i:
-	var local_pos: Vector2 = pixel_pos - global_position
-
-	var step_x: float = cell_size.x + h_separation
-	var step_y: float = cell_size.y + v_separation
-
-	return Vector2i(round(local_pos.x / step_x), round(local_pos.y / step_y))
-
-
-func get_pixel_pos_at_coords(coords: Vector2i) -> Vector2:
-	return global_position + Vector2(coords.x * (cell_size.x + h_separation), coords.y * (cell_size.y + v_separation))
+func get_contents() -> Dictionary[String, int]:
+	return _contents

@@ -3,7 +3,6 @@ extends Resource
 class_name InventoryItemData
 
 ## Must be unique
-@export var id: int
 @export var name: String
 @export var description: String
 @export var icon: Texture2D
@@ -12,7 +11,7 @@ class_name InventoryItemData
 
 
 func _to_string() -> String:
-	return "Item (%s, name: %s, footprint: %s)" % [id, name, inventory_footprint]
+	return "Item (%s, footprint: %s)" % [name, inventory_footprint]
 
 
 func get_footprint_size() -> Vector2i:
